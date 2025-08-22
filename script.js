@@ -1,70 +1,126 @@
-const $menu = document.getElementById('menu');
-const $li = $menu.querySelectorAll('li');
-const $hue1 = document.querySelector('#h1');
-const $hue2 = document.querySelector('#h2');
+/**
+ * FutureNav - Main JavaScript
+ * script.js - Interactive functionality for the futuristic navigation experience
+ * March 24, 2025
+ */
 
-let cleanTimer;
+document.addEventListener('DOMContentLoaded', () => {
+  // DOM Elements
+  const navbar = document.getElementById('navbar');
+  const mobileMenuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+  const sections = document.querySelectorAll('section');
+  const bgElements = document.querySelectorAll('.fixed > div');
 
-document.addEventListener('contextmenu', (event) => {
-    const menuBox = $menu.getBoundingClientRect();
-    const bodyBox = { width: window.innerWidth, height: window.innerHeight };
-    const target = { x: event.clientX, y: event.clientY };
-    const padding = { x: 30, y: 20 };
-    const hitX = target.x + menuBox.width >= bodyBox.width - padding.x;
-    const hitY = target.y + menuBox.height >= bodyBox.height - padding.y;
-    if (hitX) { target.x = bodyBox.width - menuBox.width - padding.x; }
-    if (hitY) { target.y = bodyBox.height - menuBox.height - padding.y; }
-    const $target = event.target;
-    const isMenu = $menu.contains($target);
-    event.preventDefault();
-    if (!isMenu) {
-        $menu.style.left = target.x + 'px';
-        $menu.style.top = target.y + 'px';
-        $menu.classList.add('open');
-        clearTimeout(cleanTimer);
+  // Mobile Menu Toggle
+  mobileMenuButton.addEventListener('click', () => {
+    mobileMenuButton.classList.toggle('active');
+    
+    if (mobileMenu.classList.contains('open')) {
+      mobileMenu.style.height = '0';
+      mobileMenu.classList.remove('open');
+    } else {
+      mobileMenu.classList.add('open');
+      mobileMenu.style.height = `${mobileMenu.scrollHeight}px`;
     }
-});
+  });
 
-document.addEventListener('pointerdown', (event) => {
-    const $target = event.target;
-    const isMenu = $menu.contains($target);
-    const isSlider = $target.matches('input[type="range"]');
-    if (!isMenu && !isSlider) {
-        $menu.classList.remove('open');
-        cleanTimer = setTimeout(() => {
-            $menu.querySelector('input[type="text"]').value = '';
-            $li.forEach($el => { $el.classList.remove('selected'); });
-        }, 200);
-    } else if (isMenu) {
-        $li.forEach($el => { $el.classList.remove('selected'); });
-        const item = $target.closest('li');
-        if (item) {
-            item.classList.add('selected');
-            const section = item.dataset.section;
-            if (section) {
-                document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
+  // Close mobile menu when a link is clicked
+  mobileNavLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      mobileMenuButton.classList.remove('active');
+      mobileMenu.style.height = '0';
+      mobileMenu.classList.remove('open');
+    });
+  });
+
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
     }
-});
+    
+    highlightCurrentSection();
+  });
 
-$hue1.addEventListener('input', (event) => {
-    requestAnimationFrame(() => {
-        document.body.style.setProperty('--hue1', event.target.value);
-        $menu.classList.add('open');
+  // Smooth scroll for nav links
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.getAttribute('href');
+      const targetSection = document.querySelector(targetId);
+      
+      if (targetSection) {
+        const offsetTop = targetSection.offsetTop - 70; // Adjust for navbar height
+        window.scrollTo({
+          top: offsetTop,
+          behavior: 'smooth'
+        });
+        
+        // Highlight the section briefly
+        targetSection.classList.add('section-highlight');
+        setTimeout(() => {
+          targetSection.classList.remove('section-highlight');
+        }, 1000);
+      }
     });
-});
+  });
 
-$hue2.addEventListener('input', (event) => {
-    requestAnimationFrame(() => {
-        document.body.style.setProperty('--hue2', event.target.value);
-        $menu.classList.add('open');
+  // Highlight active section in navbar
+  function highlightCurrentSection() {
+    let current = '';
+    
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop - 100;
+      const sectionHeight = section.offsetHeight;
+      
+      if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+        current = section.getAttribute('id');
+      }
     });
-});
+    
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === `#${current}`) {
+        link.classList.add('active');
+      }
+    });
+    
+    mobileNavLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === `#${current}`) {
+        link.classList.add('active');
+      }
+    });
+  }
 
-const rand1 = 120 + Math.floor(Math.random() * 240);
-const rand2 = rand1 - 80 + (Math.floor(Math.random() * 60) - 30);
-$hue1.value = rand1;
-$hue2.value = rand2;
-document.body.style.setProperty('--hue1', rand1);
-document.body.style.setProperty('--hue2', rand2);
+  // Scroll animations for sections
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('section-visible');
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  sections.forEach(section => {
+    section.classList.add('section-hidden');
+    observer.observe(section);
+  });
+
+  // Initialize active section on page load
+  highlightCurrentSection();
+  
+  // Make header text visible with animation
+  setTimeout(() => {
+    const headerText = document.querySelector('.text-6xl');
+    if (headerText) {
+      headerText.style.opacity = 1;
+      headerText.style.transform = 'translateY(0)';
+    }
+  }, 300);
+});
